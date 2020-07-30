@@ -1,6 +1,6 @@
 ﻿namespace SPEngineCSharp
 {
-    enum ConnectionType
+    public enum ConnectionType
     {
         Msql,SqlServer
     }

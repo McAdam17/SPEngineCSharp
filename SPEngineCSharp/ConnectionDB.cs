@@ -1,27 +1,34 @@
-﻿namespace SPEngineCSharp
+﻿using System;
+
+namespace SPEngineCSharp
 {
     public static class ConnectionDB
     {
         /// <summary>
         /// Is the default string connection
         /// </summary>
-        public static string DefaultSringConnection { get; set; }
+        public static string StringConnection { get; set; }
+        /// <summary>
+        /// Is the default string connection type
+        /// </summary>
+        public static ConnectionType ConnectionType { set; get; }
         /// <summary>
         /// Get the default connection, that was before configured
         /// </summary>
         /// <returns>Defalult connection</returns>
-        public static System.Data.SqlClient.SqlConnection Conection()
+        public static System.Data.IDbConnection Conection()
         {
-            return new System.Data.SqlClient.SqlConnection(DefaultSringConnection);
-        }
-        /// <summary>
-        /// Get a new connection, that is now configured
-        /// </summary>
-        /// <param name="conectionString">Is a new String connection</param>
-        /// <returns>A new connection based on conectionString</returns>
-        public static System.Data.SqlClient.SqlConnection Conection(string conectionString)
-        {
-            return new System.Data.SqlClient.SqlConnection(conectionString);
+            System.Data.IDbConnection newConnection = null;
+            if (StringConnection != null)
+                if (ConnectionType == ConnectionType.Msql)
+                    newConnection = new System.Data.SqlClient.SqlConnection(StringConnection);
+                else if (ConnectionType == ConnectionType.SqlServer)
+                    newConnection = new MySql.Data.MySqlClient.MySqlConnection(StringConnection);
+                else
+                    throw new ConnectionTypeNotFound();
+            else
+                throw new StringConnectionNotDefinedException("String Connection Not Defined");
+            return newConnection;
         }
     }
 }
