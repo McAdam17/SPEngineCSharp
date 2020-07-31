@@ -17,11 +17,11 @@ namespace SPEngineCSharp
         public static void ExecuteSP(StoreProcedure sp)
         {
             SqlCommand cmd;
-            SqlConnection connection = ConnectionDB.Conection();
+            IDbConnection connection = ConnectionDB.Conection();
             connection.Open();
             try
             {
-                cmd = new SqlCommand(sp.Name, connection);
+                cmd = new SqlCommand(sp.Name, connection as SqlConnection);
                 cmd.CommandType = CommandType.StoredProcedure;
                 cmd.Parameters.Clear();
                 if (sp.Parameters != null)
@@ -88,28 +88,32 @@ namespace SPEngineCSharp
         /// </summary>
         /// <param name="sp">Store Procedure</param>
         /// <returns>The result content</returns>
-        public static DataTable ExecuteConsultSP(StoreProcedure sp)
+        public static DataTable ExecuteConsultSP(string sp, List<Parameter> lst)
         {
             DataTable tableResult = new DataTable();
-            SqlDataAdapter adapter;
-
-            SqlConnection connection = ConnectionDB.Conection();
-            connection.Open();
-            try
+            //El adapter es como una carcasa mas grande que puede contener multiples SqlCommands
+            SqlCommand _Command;
+            SqlDataReader reader;
+            using (IDbConnection connection = ConnectionDB.Conection())
             {
-                adapter = new SqlDataAdapter(sp.Name, connection);
-                if (sp.Parameters != null)
-                    foreach (Parameter parametro in sp.Parameters)
-                        adapter.SelectCommand.Parameters.AddWithValue(parametro.Name, parametro.Value);
-                adapter.Fill(tableResult);
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-            finally
-            {
-                connection.Close();
+                connection.Open();
+                try
+                {
+                    _Command = new SqlCommand(sp, connection as SqlConnection);
+                    _Command.CommandText = sp;
+                    _Command.CommandType = CommandType.StoredProcedure;
+                    _Command.Parameters.Clear();
+                    //El reader guarda el resultado del comando ejecutado
+                    reader = _Command.ExecuteReader();
+                    if (reader.HasRows)
+                    {
+                        tableResult.Load(reader);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
             }
             return tableResult;
         }
