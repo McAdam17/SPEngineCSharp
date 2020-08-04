@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-
+using System.Windows.Forms;
 
 namespace SPEngineCSharp
 {
@@ -14,40 +13,47 @@ namespace SPEngineCSharp
         /// This method is for insert, update and delete db operations
         /// </summary>
         /// <param name="sp">Stored Procedure</param>
-        public static void ExecuteSP(StoreProcedure sp)
+        public static Boolean ExecuteSP(string sp, List<Parameter> lst)
         {
+            bool response;
             SqlCommand cmd;
             IDbConnection connection = ConnectionDB.Conection();
             connection.Open();
             try
             {
-                cmd = new SqlCommand(sp.Name, connection as SqlConnection);
+                cmd = new SqlCommand(sp, connection as SqlConnection);
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.Clear();
-                if (sp.Parameters != null)
+                if (lst != null)
                 {
-                    foreach (Parameter parametro in sp.Parameters)
+                    foreach (Parameter parametro in lst)
                         if (parametro.Direction == ParameterDirection.Input)
                             cmd.Parameters.AddWithValue(parametro.Name, parametro.Value);
                         else if (parametro.Direction == ParameterDirection.Output)
                             cmd.Parameters.Add(parametro.Name, parametro.DataType, parametro.Size).Direction = ParameterDirection.Output;
-                    cmd.ExecuteNonQuery();
-                    for (int i = 0; i < sp.Parameters.Count; i++)
-                        if (sp.Parameters[i].Direction == ParameterDirection.Input)
-                            sp.Parameters[i].Value = cmd.Parameters[i].Value.ToString();
+                    response = Convert.ToBoolean(cmd.ExecuteNonQuery());
+                    for (int i = 0; i < lst.Count; i++)
+                        if (lst[i].Direction == ParameterDirection.Input)
+                            lst[i].Value = cmd.Parameters[i].Value.ToString();
+                }
+                else
+                {
+                    //Debería existir un mensaje de error
+                    response = false;
                 }
             }
             catch (Exception ex)
             {
+                response = false;
                 throw ex;
             }
             finally
             {
                 connection.Close();
             }
+            return response;
         }
         /// <summary>
-        /// Execute the Stored Procedure with a new connection
+        /// Execute the Stored Procedure with a new connection, DON'T USE IT
         /// This method is for insert, update and delete db operations
         /// </summary>
         /// <param name="sp">Stored Procedure</param>
@@ -87,6 +93,7 @@ namespace SPEngineCSharp
         /// Execute a consult Store Procedure with the default connection
         /// </summary>
         /// <param name="sp">Store Procedure</param>
+        /// <param name="lst">Parameters List</param>
         /// <returns>The result content</returns>
         public static DataTable ExecuteConsultSP(string sp, List<Parameter> lst)
         {
@@ -102,7 +109,19 @@ namespace SPEngineCSharp
                     _Command = new SqlCommand(sp, connection as SqlConnection);
                     _Command.CommandText = sp;
                     _Command.CommandType = CommandType.StoredProcedure;
-                    _Command.Parameters.Clear();
+                    //Si existe lista de parámetros
+                    //Si no existe
+                    if (lst != null)
+                    {
+                        foreach (Parameter item in lst)
+                        {
+                            _Command.Parameters.AddWithValue(item.Name, item.Value);
+                        }
+                    }
+                    else
+                    {
+                        _Command.Parameters.Clear();
+                    }
                     //El reader guarda el resultado del comando ejecutado
                     reader = _Command.ExecuteReader();
                     if (reader.HasRows)
@@ -119,7 +138,7 @@ namespace SPEngineCSharp
         }
 
         /// <summary>
-        /// Execute a consult Store Procedure with a new connection
+        /// Execute a consult Store Procedure with a new connection DON'T USE IT
         /// </summary>
         /// <param name="sp">Store Procedure</param>
         /// <returns>The result content</returns>
