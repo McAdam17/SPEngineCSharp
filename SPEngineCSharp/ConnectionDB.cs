@@ -9,6 +9,12 @@ namespace SPEngineCSharp
             Msql = 1,
             SqlServer = 2
         }
+
+        public enum SPType
+        {
+            Select = 1,
+            InsertUpdateDelete = 2
+        }
         /// <summary>
         /// Is the default string connection
         /// </summary>
